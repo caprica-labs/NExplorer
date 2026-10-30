@@ -1,0 +1,26 @@
+NExplorer is a document reader and file manager in one app. No ads, no tracking, no accounts.
+
+<b>Reader</b>
+<ul>
+<li>Opens PDF, EPUB, MOBI, FB2, XPS, CBZ and CBR comics, DOCX, DOC, PPTX, HTML and TXT.</li>
+<li>Light and dark themes for the app and the page; scroll or page by page, vertical or horizontal; reflow for easier reading.</li>
+<li>Highlight, underline, add text and signatures; every edit can be undone.</li>
+<li>Bookmarks, table of contents and search.</li>
+</ul>
+
+<b>Explorer</b>
+<ul>
+<li>Browse internal storage and SD cards.</li>
+<li>Copy, move, rename, hide, zip and extract (ZIP, RAR, 7z).</li>
+<li>Recycle bin: deleted files are kept for 30 days.</li>
+</ul>
+
+<b>Tools</b>
+<ul>
+<li>PDF to Image, Text and Word; Image, Text and Word to PDF.</li>
+<li>Merge, compress, lock, unlock and manage PDF pages.</li>
+<li>Document scanner.</li>
+<li>Network Share: send files between the phone and a computer on the same Wi-Fi, through a web page.</li>
+</ul>
+
+Built on MuPDF. Free software under the GNU AGPL, version 3 or later.

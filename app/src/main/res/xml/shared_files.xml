@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-path name="internal" path="." />
+    <root-path name="storage" path="storage/" />
+    <cache-path name="opened" path="opened/" />
+    <cache-path name="share" path="share/" />
+</paths>

@@ -1,0 +1,3 @@
+<resources>
+    <style name="Theme.NExplorer" parent="android:Theme.Material.NoActionBar" />
+</resources>

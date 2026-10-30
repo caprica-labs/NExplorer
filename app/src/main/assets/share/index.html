@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NExplorer Share</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>NExplorer Share</h1>
+    <span id="me"></span>
+  </header>
+
+  <section id="join" hidden>
+    <form id="join-form" autocomplete="off">
+      <p class="note">Type a name for this device. Others will see it, and files you send go in a folder with this name.</p>
+      <label for="name">Name</label>
+      <input id="name" maxlength="40" required>
+      <div id="pin-row">
+        <label for="pin">PIN <span class="hint">(shown on the phone)</span></label>
+        <input id="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6">
+      </div>
+      <p id="join-error" class="error" hidden></p>
+      <button class="primary" type="submit">Join</button>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <button id="choose" class="tile upload" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-5 5m5-5 5 5M5 20h14"/></svg>
+      Upload
+    </button>
+    <input type="file" id="files" multiple hidden>
+    <ul id="uploads" class="list"></ul>
+
+    <div id="folders"></div>
+    <p id="empty" class="note" hidden>Nothing is shared yet.</p>
+  </section>
+
+  <section id="gone" hidden>
+    <p id="gone-text" class="note"></p>
+    <button id="retry" class="primary" type="button">Try again</button>
+  </section>
+
+  <footer>
+    NExplorer is free software (GNU AGPL v3 or later).
+    <a href="https://github.com/caprica-labs/NExplorer" target="_blank" rel="noopener noreferrer">Source code</a>
+  </footer>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>

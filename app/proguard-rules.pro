@@ -1,0 +1,2 @@
+-keep class com.artifex.mupdf.fitz.** { *; }
+-keep class me.zhanghai.android.libarchive.** { *; }
