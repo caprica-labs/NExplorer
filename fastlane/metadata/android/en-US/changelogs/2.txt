@@ -1,0 +1,1 @@
+Build safety: the Gradle download is now checked against its official checksum.
