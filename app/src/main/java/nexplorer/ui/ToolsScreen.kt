@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.DocumentScanner
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Lock
@@ -70,6 +71,7 @@ private val firstPage = listOf(
     tool("Recycle bin", Icons.Outlined.Delete),
     PDF_TOOLS,
     tool("Network Share", Icons.Outlined.WifiTethering),
+    tool("Downloads", Icons.Outlined.Download),
 )
 
 private val rows: List<List<Tool>> = listOf(

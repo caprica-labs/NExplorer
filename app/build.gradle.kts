@@ -19,8 +19,8 @@ android {
         applicationId = "io.github.caprica_labs.nexplorer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.00.01"
+        versionCode = 3
+        versionName = "1.01.01"
     }
 
     signingConfigs {

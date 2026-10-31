@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import nexplorer.download.DownloadsFlow
 import nexplorer.ui.theme.AccentBlue
 import nexplorer.ui.home.shareFiles
 import nexplorer.ui.home.zipForSharing
@@ -430,6 +431,7 @@ private fun App(
         OpenTool.PdfToWord -> PdfToWordFlow(volumes, onSaved = saved, onClose = close)
         OpenTool.NetworkShare -> NetworkShareFlow(volumes, onOpenFile = { f -> openAny(f, listOf(f)) }, onClose = close)
         OpenTool.RecycleBin -> RecycleBinScreen(volumes, onClose = close)
+        OpenTool.Downloads -> DownloadsFlow(volumes, onOpenFile = { f -> openAny(f, listOf(f)) }, onClose = close)
         OpenTool.PdfToImage -> PdfToImageFlow(
             volumes,
             onSaved = { f, n ->
@@ -586,7 +588,7 @@ private enum class OpenTool(val label: String?) {
     Scanner("Scanner"), ImageToPdf("Image to PDF"), TextWrite(null), TextImport(null), WordToPdf("Word to PDF"),
     Merge("Merge PDFs"), Compress("Compress"), Manage("Manage PDF"), Lock("Lock PDF"), Unlock("Unlock PDF"),
     PdfToText("PDF to Text"), PdfToWord("PDF to Word"), PdfToImage("PDF to Image"), NetworkShare("Network Share"),
-    RecycleBin("Recycle bin");
+    RecycleBin("Recycle bin"), Downloads("Downloads");
 
     companion object {
         val byLabel: Map<String, OpenTool> = entries.mapNotNull { t -> t.label?.let { it to t } }.toMap()
