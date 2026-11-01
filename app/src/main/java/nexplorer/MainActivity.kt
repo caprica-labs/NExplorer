@@ -431,7 +431,15 @@ private fun App(
         OpenTool.PdfToWord -> PdfToWordFlow(volumes, onSaved = saved, onClose = close)
         OpenTool.NetworkShare -> NetworkShareFlow(volumes, onOpenFile = { f -> openAny(f, listOf(f)) }, onClose = close)
         OpenTool.RecycleBin -> RecycleBinScreen(volumes, onClose = close)
-        OpenTool.Downloads -> DownloadsFlow(volumes, onOpenFile = { f -> openAny(f, listOf(f)) }, onClose = close)
+        OpenTool.Downloads -> DownloadsFlow(
+            volumes,
+            onOpenFile = { f -> openAny(f, listOf(f)) },
+            onOpenFolder = { dir ->
+                tool = null
+                showFolder(dir)
+            },
+            onClose = close,
+        )
         OpenTool.PdfToImage -> PdfToImageFlow(
             volumes,
             onSaved = { f, n ->

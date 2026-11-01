@@ -93,7 +93,7 @@ private enum class Page(val title: String, val label: String, val icon: ImageVec
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun DownloadsFlow(volumes: List<Volume>, onOpenFile: (File) -> Unit, onClose: () -> Unit) {
+fun DownloadsFlow(volumes: List<Volume>, onOpenFile: (File) -> Unit, onOpenFolder: (File) -> Unit, onClose: () -> Unit) {
     val ctx = LocalContext.current
     remember { Downloads.init(ctx) }
     val version by Downloads.version.collectAsState()
@@ -178,6 +178,18 @@ fun DownloadsFlow(volumes: List<Volume>, onOpenFile: (File) -> Unit, onClose: ()
                                     selected = emptySet()
                                 })
                             }
+                            val single = list.singleOrNull { it.id in selected }.takeIf { selected.size == 1 }
+                            DropdownMenuItem(
+                                text = { Text("Open folder") },
+                                enabled = single != null,
+                                onClick = {
+                                    menu = false
+                                    val d = single ?: return@DropdownMenuItem
+                                    val folder = d.file?.parentFile?.takeIf { it.isDirectory } ?: d.dir
+                                    if (folder.isDirectory) onOpenFolder(folder)
+                                    else Toast.makeText(ctx, "This folder no longer exists", Toast.LENGTH_SHORT).show()
+                                },
+                            )
                         }
                     }
                 }
@@ -245,7 +257,10 @@ fun DownloadsFlow(volumes: List<Volume>, onOpenFile: (File) -> Unit, onClose: ()
                                     .combinedClickable(
                                         onClick = {
                                             when {
+                                                dragging != null -> {}
                                                 selected.isNotEmpty() -> toggle(d)
+                                                info.state == DownloadState.Running || info.state == DownloadState.Queued -> Downloads.stop(listOf(d))
+                                                info.state == DownloadState.Paused || info.state == DownloadState.Failed -> Downloads.start(ctx, listOf(d))
                                                 info.state == DownloadState.Done -> {
                                                     val f = d.file
                                                     if (f != null && f.exists()) onOpenFile(f)
