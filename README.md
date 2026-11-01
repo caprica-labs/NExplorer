@@ -1,6 +1,6 @@
 # NExplorer
 
-An ad-free document reader, file manager and download manager for Android. No ads, no tracking, no accounts.
+NExplorer is a free, simple file explorer for Android that also reads documents, with tools to manage them and a document scanner. It includes a download manager and can share files over your local network.
 
 ## Features
 
