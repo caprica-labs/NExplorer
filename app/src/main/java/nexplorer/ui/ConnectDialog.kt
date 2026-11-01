@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material3.AlertDialog
@@ -42,11 +43,12 @@ fun ConnectDialog(onClose: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     "Happy to hear any suggestions, ideas, or problems you run into. " +
-                        "Send an email, or open an issue on GitHub.",
+                        "Send an email, open an issue on GitHub, or join the Telegram channel.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 ContactRow(Icons.Outlined.Email, Credits.EMAIL) { email(ctx) }
                 ContactRow(Icons.Outlined.Code, "github.com/caprica-labs/NExplorer") { openLink(ctx, Credits.SOURCE) }
+                ContactRow(Icons.AutoMirrored.Outlined.Send, "t.me/NExplorer_App") { openLink(ctx, Credits.TELEGRAM) }
                 Text(
                     "NExplorer ${appVersion(ctx)}".trim(),
                     fontSize = 12.sp,

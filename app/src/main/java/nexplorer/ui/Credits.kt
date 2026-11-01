@@ -30,6 +30,7 @@ data class Credit(
 object Credits {
     const val SOURCE = "https://github.com/caprica-labs/NExplorer"
     const val EMAIL = "caprica-labs@proton.me"
+    const val TELEGRAM = "https://t.me/NExplorer_App"
     const val OWNER = "caprica-labs"
     const val YEAR = "2026"
 

@@ -58,7 +58,8 @@ the app under **Settings > Support**.
 ## Contact
 
 Suggestions, ideas and problems are welcome: open an
-[issue](https://github.com/caprica-labs/NExplorer/issues) or email caprica-labs@proton.me.
+[issue](https://github.com/caprica-labs/NExplorer/issues), email caprica-labs@proton.me, or join the
+Telegram channel [t.me/NExplorer_App](https://t.me/NExplorer_App).
 
 ## Credits
 
