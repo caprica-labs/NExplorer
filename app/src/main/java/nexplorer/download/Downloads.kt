@@ -50,6 +50,8 @@ class Download internal constructor(val id: Long, val url: String, val dir: File
 
     @Volatile internal var parts: List<Part> = emptyList()
     internal var validator: String? = null
+    internal var single = false
+    @Volatile internal var resolved: String? = null
     internal var job: Job? = null
     internal val conns = CopyOnWriteArraySet<HttpURLConnection>()
     internal val part: File get() = File(dir, ".nexplorer-$id.part")
@@ -198,6 +200,7 @@ object Downloads {
                 try {
                     transfer(d)
                 } catch (_: Restart) {
+                    d.single = true
                     d.parts = emptyList()
                     d.part.delete()
                     transfer(d)
@@ -227,12 +230,13 @@ object Downloads {
         val ua = o.userAgent.header()
         var first: HttpURLConnection? = null
         if (d.parts.isEmpty()) {
-            val (c, _) = open(d.url, ua, "bytes=0-", null) { d.conns += it }
+            val (c, final) = open(d.url, ua, "bytes=0-", null) { d.conns += it }
+            d.resolved = final.toString()
             val code = c.responseCode
             val ranges = code == 206 || c.getHeaderField("Accept-Ranges")?.contains("bytes", ignoreCase = true) == true
             d.total = if (code == 206) DownloadNames.rangeTotal(c.getHeaderField("Content-Range")) ?: -1L else c.contentLengthLong
             d.validator = c.getHeaderField("ETag")?.takeUnless { it.startsWith("W/") } ?: c.getHeaderField("Last-Modified")
-            val plan = if (ranges && d.total > 0 && o.threads > 1) DownloadPlan.segments(d.total, o.threads, o.minPartMb * MB) else emptyList()
+            val plan = if (ranges && d.total > 0 && o.threads > 1 && !d.single) DownloadPlan.segments(d.total, o.threads, o.minPartMb * MB) else emptyList()
             if (plan.size > 1) {
                 c.disconnect()
                 d.conns -= c
@@ -279,10 +283,9 @@ object Downloads {
     }
 
     private suspend fun fetch(d: Download, p: Part, ua: String, opened: HttpURLConnection?) {
-        val resuming = p.pos > 0 || d.parts.size > 1
-        val c = opened ?: openPatiently(d, ua, "bytes=${p.pos}-${if (p.end >= 0) p.end.toString() else ""}", d.validator.takeIf { resuming })
+        val c = opened ?: openPatiently(d, ua, "bytes=${p.pos}-${if (p.end >= 0) p.end.toString() else ""}", d.validator.takeIf { p.pos > p.start })
         try {
-            if (opened == null && c.responseCode == 200 && resuming) {
+            if (opened == null && c.responseCode == 200 && p.pos > 0) {
                 if (d.parts.size > 1) throw Restart()
                 p.pos = p.start
             }
@@ -311,11 +314,16 @@ object Downloads {
     private suspend fun openPatiently(d: Download, ua: String, range: String, validator: String?): HttpURLConnection {
         var tries = 0
         while (true) {
+            coroutineContext.ensureActive()
+            val link = d.resolved ?: d.url
             try {
-                return open(d.url, ua, range, validator) { d.conns += it }.first
+                return open(link, ua, range, validator) { d.conns += it }.first
             } catch (b: Busy) {
                 if (++tries > 30) throw IOException("the server refused this many connections; try fewer threads")
                 delay(if (b.wait > 0) b.wait.coerceAtMost(60_000) else (2_000L * tries).coerceAtMost(15_000))
+            } catch (e: IOException) {
+                if (link == d.url) throw e
+                d.resolved = null
             }
         }
     }
@@ -379,7 +387,7 @@ object Downloads {
                     JSONObject()
                         .put("id", d.id).put("url", d.url).put("dir", d.dir.path).put("name", d.name)
                         .put("state", d.state.name).put("total", d.total).put("created", d.created).put("finished", d.finished).put("order", d.order)
-                        .put("file", d.file?.path).put("validator", d.validator).put("error", d.error)
+                        .put("file", d.file?.path).put("validator", d.validator).put("error", d.error).put("single", d.single)
                         .put("parts", JSONArray().apply { d.parts.forEach { put(JSONArray().put(it.start).put(it.end).put(it.pos)) } }),
                 )
             }
@@ -409,6 +417,7 @@ object Downloads {
                     finished = o.optLong("finished", 0L)
                     file = o.optString("file").takeIf { o.has("file") && it.isNotEmpty() }?.let(::File)
                     validator = o.optString("validator").takeIf { o.has("validator") }
+                    single = o.optBoolean("single", false)
                     error = o.optString("error").takeIf { o.has("error") }
                     val ps = o.optJSONArray("parts") ?: JSONArray()
                     parts = (0 until ps.length()).map { j ->
