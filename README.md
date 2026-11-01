@@ -17,7 +17,7 @@ NExplorer is a free, simple file explorer for Android that also reads documents,
 - PDF to Image, Text and Word; Image, Text and Word to PDF.
 - Merge, compress, lock, unlock and manage PDF pages.
 - Document scanner.
-- Network Share: send files between the phone and other devices on the same Wi-Fi, through a web page.
+- Network Share: send files between your device and others on the same Wi-Fi (phones, tablets, laptops), using just a web browser.
 
 **Download manager**
 - Download files from direct links, or send a link to NExplorer from any app's share menu.
