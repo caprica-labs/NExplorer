@@ -4,20 +4,20 @@ NExplorer is a free, simple file explorer for Android that also reads documents,
 
 ## Features
 
+**Explorer**
+- Browse internal storage and SD cards; copy, move, rename, hide, zip and extract (ZIP, RAR, 7z).
+- Recycle bin: deleted files are kept for 30 days.
+
 **Reader**
 - Opens PDF, EPUB, MOBI, FB2, XPS, CBZ and CBR comics, DOCX, DOC, PPTX, HTML and TXT.
 - Light and dark themes for the app and the page.
 - Highlight, underline, text, signatures, bookmarks and the table of contents; undo for every edit.
 
-**Explorer**
-- Browse internal storage and SD cards; copy, move, rename, hide, zip and extract (ZIP, RAR, 7z).
-- Recycle bin: deleted files are kept for 30 days.
-
 **Tools**
 - PDF to Image, Text and Word; Image, Text and Word to PDF.
 - Merge, compress, lock, unlock and manage PDF pages.
 - Document scanner.
-- Network Share: send files between the phone and a computer on the same Wi-Fi, through a web page.
+- Network Share: send files between the phone and other devices on the same Wi-Fi, through a web page.
 
 **Download manager**
 - Download files from direct links, or send a link to NExplorer from any app's share menu.
