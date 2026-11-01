@@ -32,14 +32,14 @@ class DownloadService : Service() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0,
             )
         }
-        if (intent?.action == PAUSE) Downloads.pauseAll()
+        if (intent?.action == PAUSE) Downloads.stop(Downloads.active())
         handler.removeCallbacks(update)
         handler.post(update)
         return START_NOT_STICKY
     }
 
     override fun onTimeout(startId: Int, fgsType: Int) {
-        Downloads.pauseAll()
+        Downloads.stop(Downloads.active())
         end()
     }
 
@@ -56,14 +56,14 @@ class DownloadService : Service() {
 
     private val update = object : Runnable {
         override fun run() {
-            if (Downloads.running == 0) return end()
+            if (Downloads.busy == 0) return end()
             runCatching { getSystemService(NotificationManager::class.java).notify(ID, notification()) }
             handler.postDelayed(this, EVERY)
         }
     }
 
     private fun notification() = NotificationCompat.Builder(this, CHANNEL).apply {
-        val running = Downloads.list.value.filter { it.state == DownloadState.Running }
+        val running = Downloads.active().filter { it.state == DownloadState.Running }
         setSmallIcon(R.drawable.ic_files_notify)
         setContentTitle(running.singleOrNull()?.name ?: if (running.isEmpty()) "Downloads" else "Downloading ${running.size} files")
         val done = running.sumOf { it.done }

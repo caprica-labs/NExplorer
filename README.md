@@ -18,7 +18,7 @@ An ad-free document reader, file manager and downloader for Android. No ads, no 
 - Merge, compress, lock, unlock and manage PDF pages.
 - Document scanner.
 - Network Share: send files between the phone and a computer on the same Wi-Fi, through a web page.
-- Downloads: download files from direct links, with pause and resume.
+- Downloads: download files from direct links, with pause and resume, multi-threading and a scheduler.
 
 ## Download
 

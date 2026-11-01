@@ -5,6 +5,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Calendar
+import java.util.TimeZone
 
 class DownloadNamesTest {
     @Test
@@ -60,14 +62,58 @@ class DownloadNamesTest {
 
     @Test
     fun onlyWebLinks() {
-        assertEquals("https://example.com/a.pdf", Downloads.normalize("  https://example.com/a.pdf "))
-        assertEquals("https://example.com/a.pdf", Downloads.normalize("example.com/a.pdf"))
-        assertEquals("http://example.com/a", Downloads.normalize("http://example.com/a"))
-        assertNull(Downloads.normalize("file:///sdcard/secret.txt"))
-        assertNull(Downloads.normalize("ftp://example.com/a"))
-        assertNull(Downloads.normalize("javascript:alert(1)"))
-        assertNull(Downloads.normalize("two words"))
-        assertNull(Downloads.normalize(""))
-        assertFalse(Downloads.normalize("https://example.com")!!.startsWith("http://"))
+        assertEquals("https://example.com/a.pdf", DownloadNames.normalize("  https://example.com/a.pdf "))
+        assertEquals("https://example.com/a.pdf", DownloadNames.normalize("example.com/a.pdf"))
+        assertEquals("http://example.com/a", DownloadNames.normalize("http://example.com/a"))
+        assertNull(DownloadNames.normalize("file:///sdcard/secret.txt"))
+        assertNull(DownloadNames.normalize("ftp://example.com/a"))
+        assertNull(DownloadNames.normalize("javascript:alert(1)"))
+        assertNull(DownloadNames.normalize("two words"))
+        assertNull(DownloadNames.normalize(""))
+        assertFalse(DownloadNames.normalize("https://example.com")!!.startsWith("http://"))
+    }
+
+    @Test
+    fun httpBecomesHttps() {
+        assertEquals("https://example.com/a", DownloadNames.secure("http://example.com/a"))
+        assertEquals("https://example.com/a", DownloadNames.secure("https://example.com/a"))
+    }
+
+    @Test
+    fun linkInSharedText() {
+        assertEquals("https://example.com/a.zip", DownloadNames.linkIn("Get it here: https://example.com/a.zip."))
+        assertEquals("https://example.com/b", DownloadNames.linkIn("(https://example.com/b)"))
+        assertNull(DownloadNames.linkIn("no link here"))
+        assertNull(DownloadNames.linkIn(null))
+    }
+
+    @Test
+    fun partsCoverTheWholeFile() {
+        val parts = DownloadPlan.segments(10_000_000, threads = 4, minSize = 1_048_576)
+        assertEquals(4, parts.size)
+        assertEquals(0L, parts.first().first)
+        assertEquals(9_999_999L, parts.last().last)
+        parts.zipWithNext().forEach { (a, b) -> assertEquals(a.last + 1, b.first) }
+    }
+
+    @Test
+    fun partsRespectTheMinimumSize() {
+        assertEquals(2, DownloadPlan.segments(2_500_000, threads = 16, minSize = 1_048_576).size)
+        assertEquals(1, DownloadPlan.segments(500_000, threads = 8, minSize = 1_048_576).size)
+        assertEquals(0, DownloadPlan.segments(-1, threads = 8, minSize = 1_048_576).size)
+    }
+
+    @Test
+    fun scheduleTimes() {
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+        cal.clear()
+        cal.set(2026, Calendar.NOVEMBER, 1, 1, 30)
+        val now = cal.timeInMillis
+        val today = DownloadPlan.nextAt(now, 2 * 60 + 1, Calendar.getInstance(TimeZone.getTimeZone("UTC")))
+        assertEquals(31L * 60_000, today - now)
+        val tomorrow = DownloadPlan.nextAt(now, 60, Calendar.getInstance(TimeZone.getTimeZone("UTC")))
+        assertEquals((24 * 60 - 30).toLong() * 60_000, tomorrow - now)
+        assertEquals("02:01", DownloadPlan.clock(121))
+        assertEquals("23:59", DownloadPlan.clock(1439))
     }
 }

@@ -1,1 +1,1 @@
-New: Downloads in Tools. Download files from direct links, with pause, resume and a choice of folder.
+New: Downloads in Tools. Download files from direct links with pause and resume, several at once, multi-thread downloading and a daily scheduler. Links can also be sent to NExplorer from the share menu.
