@@ -51,6 +51,7 @@ class Download internal constructor(val id: Long, val url: String, val dir: File
     @Volatile internal var parts: List<Part> = emptyList()
     internal var validator: String? = null
     internal var single = false
+    internal val errors = java.util.concurrent.atomic.AtomicInteger()
     @Volatile internal var resolved: String? = null
     internal var job: Job? = null
     internal val conns = CopyOnWriteArraySet<HttpURLConnection>()
@@ -79,7 +80,9 @@ object Downloads {
     @Volatile private var lastSave = 0L
 
     private class Restart : IOException("the file changed on the server")
-    private class Busy(val wait: Long) : IOException("the server is busy")
+    private class Busy(val code: Int, val wait: Long) : IOException("the server answered $code")
+    private class GaveUp(message: String) : IOException(message)
+    private class Permanent(message: String) : IOException(message)
 
     fun init(ctx: Context) {
         synchronized(lock) {
@@ -108,6 +111,7 @@ object Downloads {
         init(ctx)
         list.filter { it.state == DownloadState.Paused || it.state == DownloadState.Failed }.forEach {
             it.error = null
+            it.errors.set(0)
             it.state = DownloadState.Queued
         }
         changed(save = true)
@@ -230,7 +234,7 @@ object Downloads {
         val ua = o.userAgent.header()
         var first: HttpURLConnection? = null
         if (d.parts.isEmpty()) {
-            val (c, final) = open(d.url, ua, "bytes=0-", null) { d.conns += it }
+            val (c, final) = openPatiently(d, ua, "bytes=0-", null, d.url)
             d.resolved = final.toString()
             val code = c.responseCode
             val ranges = code == 206 || c.getHeaderField("Accept-Ranges")?.contains("bytes", ignoreCase = true) == true
@@ -283,7 +287,27 @@ object Downloads {
     }
 
     private suspend fun fetch(d: Download, p: Part, ua: String, opened: HttpURLConnection?) {
-        val c = opened ?: openPatiently(d, ua, "bytes=${p.pos}-${if (p.end >= 0) p.end.toString() else ""}", d.validator.takeIf { p.pos > p.start })
+        var conn = opened
+        while (true) {
+            try {
+                fetchOnce(d, p, ua, conn)
+                return
+            } catch (e: Restart) {
+                throw e
+            } catch (e: GaveUp) {
+                throw e
+            } catch (e: Permanent) {
+                throw e
+            } catch (e: IOException) {
+                coroutineContext.ensureActive()
+                failed(d, e)
+                conn = null
+            }
+        }
+    }
+
+    private suspend fun fetchOnce(d: Download, p: Part, ua: String, opened: HttpURLConnection?) {
+        val c = opened ?: openPatiently(d, ua, "bytes=${p.pos}-${if (p.end >= 0) p.end.toString() else ""}", d.validator.takeIf { p.pos > p.start }).first
         try {
             if (opened == null && c.responseCode == 200 && p.pos > 0) {
                 if (d.parts.size > 1) throw Restart()
@@ -311,21 +335,37 @@ object Downloads {
         if (p.end >= 0 && p.pos <= p.end) throw IOException("the connection ended early")
     }
 
-    private suspend fun openPatiently(d: Download, ua: String, range: String, validator: String?): HttpURLConnection {
-        var tries = 0
+    private suspend fun openPatiently(
+        d: Download,
+        ua: String,
+        range: String,
+        validator: String?,
+        only: String? = null,
+    ): Pair<HttpURLConnection, URL> {
         while (true) {
             coroutineContext.ensureActive()
-            val link = d.resolved ?: d.url
+            val link = only ?: d.resolved ?: d.url
             try {
-                return open(link, ua, range, validator) { d.conns += it }.first
-            } catch (b: Busy) {
-                if (++tries > 30) throw IOException("the server refused this many connections; try fewer threads")
-                delay(if (b.wait > 0) b.wait.coerceAtMost(60_000) else (2_000L * tries).coerceAtMost(15_000))
-            } catch (e: IOException) {
+                return open(link, ua, range, validator) { d.conns += it }
+            } catch (e: Permanent) {
                 if (link == d.url) throw e
                 d.resolved = null
+            } catch (b: Busy) {
+                coroutineContext.ensureActive()
+                failed(d, b, b.wait)
+            } catch (e: IOException) {
+                coroutineContext.ensureActive()
+                if (link == d.url) failed(d, e) else d.resolved = null
             }
         }
+    }
+
+    private suspend fun failed(d: Download, e: IOException, serverWait: Long = 0) {
+        val o = DownloadSettings.options.value
+        if (d.errors.incrementAndGet() > o.maxErrors) {
+            throw GaveUp("stopped after ${o.maxErrors} errors; the last was: ${e.message ?: "the connection failed"}")
+        }
+        delay(maxOf(o.errorPauseSec * 1000L, serverWait.coerceAtMost(600_000)))
     }
 
     private fun open(
@@ -353,20 +393,20 @@ object Downloads {
                     val location = conn.getHeaderField("Location") ?: throw IOException("the server sent a broken redirect")
                     conn.disconnect()
                     val next = URL(url, location)
-                    if (next.protocol !in setOf("http", "https")) throw IOException("the link led to an unsupported address")
-                    if (url.protocol == "https" && next.protocol == "http") throw IOException("the link redirected to an unencrypted address")
-                    if (++hops > MAX_REDIRECTS) throw IOException("too many redirects")
+                    if (next.protocol !in setOf("http", "https")) throw Permanent("the link led to an unsupported address")
+                    if (url.protocol == "https" && next.protocol == "http") throw Permanent("the link redirected to an unencrypted address")
+                    if (++hops > MAX_REDIRECTS) throw Permanent("too many redirects")
                     url = next
                 }
                 in 200..299 -> return conn to url
-                429, 503 -> {
+                408, 429, in 500..599 -> {
                     val wait = conn.getHeaderField("Retry-After")?.trim()?.toLongOrNull()?.times(1000) ?: 0L
                     conn.disconnect()
-                    throw Busy(wait)
+                    throw Busy(code, wait)
                 }
                 else -> {
                     conn.disconnect()
-                    throw IOException(if (code == 416) "the server can't continue this download" else "the server answered $code")
+                    throw Permanent(if (code == 416) "the server can't continue this download" else "the server answered $code")
                 }
             }
         }

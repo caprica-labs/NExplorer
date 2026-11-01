@@ -31,6 +31,8 @@ data class DownloadOptions(
     val threads: Int = 1,
     val minPartMb: Int = 1,
     val userAgent: UserAgent = UserAgent.Chrome,
+    val maxErrors: Int = 150,
+    val errorPauseSec: Int = 15,
     val schedule: Boolean = false,
     val startMinute: Int = 2 * 60,
     val stopMinute: Int = 8 * 60,
@@ -51,6 +53,8 @@ object DownloadSettings {
             simultaneous = p.getInt("simultaneous", d.simultaneous).coerceIn(1, 5),
             threads = p.getInt("threads", d.threads).coerceIn(1, 16),
             minPartMb = p.getInt("minPartMb", d.minPartMb).coerceIn(1, 64),
+            maxErrors = p.getInt("maxErrors", d.maxErrors).coerceIn(1, 99_999),
+            errorPauseSec = p.getInt("errorPauseSec", d.errorPauseSec).coerceIn(0, 3600),
             userAgent = runCatching { UserAgent.valueOf(p.getString("userAgent", null) ?: "") }.getOrDefault(d.userAgent),
             schedule = p.getBoolean("schedule", d.schedule),
             startMinute = p.getInt("startMinute", d.startMinute).coerceIn(0, 1439),
@@ -69,6 +73,8 @@ object DownloadSettings {
             .putInt("threads", o.threads)
             .putInt("minPartMb", o.minPartMb)
             .putString("userAgent", o.userAgent.name)
+            .putInt("maxErrors", o.maxErrors)
+            .putInt("errorPauseSec", o.errorPauseSec)
             .putBoolean("schedule", o.schedule)
             .putInt("startMinute", o.startMinute)
             .putInt("stopMinute", o.stopMinute)

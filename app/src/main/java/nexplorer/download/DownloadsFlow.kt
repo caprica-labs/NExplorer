@@ -47,6 +47,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.RadioButton
@@ -73,6 +75,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -410,6 +414,10 @@ private fun SettingsPage() {
         OptionLabel("Minimum part size per thread")
         val sizes = listOf(1, 2, 4, 8, 16)
         Dropdown(label = "${o.minPartMb} MB", options = sizes.map { "$it MB" }) { i -> set { it.copy(minPartMb = sizes[i]) } }
+        OptionLabel("Maximum errors")
+        NumberField(o.maxErrors, 1..99_999, "Stops trying after this many errors") { n -> set { it.copy(maxErrors = n) } }
+        OptionLabel("Pause after error (seconds)")
+        NumberField(o.errorPauseSec, 0..3600, "Waits this long before trying again") { n -> set { it.copy(errorPauseSec = n) } }
         OptionLabel("User-agent")
         SettingRow(o.userAgent.label) { agents = true }
         OptionLabel("Scheduler")
@@ -453,6 +461,28 @@ private fun SettingsPage() {
         )
     }
     if (scheduler) SchedulerDialog(o, onDismiss = { scheduler = false })
+}
+
+@Composable
+private fun NumberField(value: Int, range: IntRange, note: String, onChange: (Int) -> Unit) {
+    var text by remember { mutableStateOf(value.toString()) }
+    val n = text.toIntOrNull()
+    val ok = n != null && n in range
+    OutlinedTextField(
+        value = text,
+        onValueChange = { v ->
+            text = v.filter { it.isDigit() }.take(5)
+            text.toIntOrNull()?.takeIf { it in range }?.let(onChange)
+        },
+        singleLine = true,
+        isError = !ok,
+        supportingText = {
+            Text(if (ok) note else "Enter a number from ${range.first} to ${range.last}", fontSize = 12.sp)
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AccentBlue, cursorColor = AccentBlue),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
