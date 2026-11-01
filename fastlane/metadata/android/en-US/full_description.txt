@@ -1,4 +1,4 @@
-NExplorer is a document reader, file manager and downloader in one app. No ads, no tracking, no accounts.
+NExplorer is a document reader, file manager and download manager in one app. No ads, no tracking, no accounts.
 
 <b>Reader</b>
 <ul>
@@ -21,7 +21,17 @@ NExplorer is a document reader, file manager and downloader in one app. No ads, 
 <li>Merge, compress, lock, unlock and manage PDF pages.</li>
 <li>Document scanner.</li>
 <li>Network Share: send files between the phone and a computer on the same Wi-Fi, through a web page.</li>
-<li>Downloads: download files from direct links, with pause and resume, multi-threading and a scheduler.</li>
+</ul>
+
+<b>Download manager</b>
+<ul>
+<li>Download files from direct links, or send a link to NExplorer from any app's share menu.</li>
+<li>Shows the name and size before you start; choose the name and the folder.</li>
+<li>Pause and resume, a queue you can reorder, and up to 5 downloads at once.</li>
+<li>Up to 16 threads per download for faster speeds.</li>
+<li>Daily scheduler: start and stop downloads at set times.</li>
+<li>Retries on its own when a server or connection fails.</li>
+<li>Encrypted (https) downloads only.</li>
 </ul>
 
 Built on MuPDF. Free software under the GNU AGPL, version 3 or later.

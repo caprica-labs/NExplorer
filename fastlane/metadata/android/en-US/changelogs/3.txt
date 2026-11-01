@@ -1,1 +1,1 @@
-New: Downloads in Tools. Download files from direct links with pause and resume, several at once, multi-thread downloading and a daily scheduler. Links can also be sent to NExplorer from the share menu.
+New: a download manager in Tools. Pause and resume, a reorderable queue, up to 5 downloads at once, up to 16 threads each, a daily scheduler and automatic retries. Links can also be sent from the share menu.
