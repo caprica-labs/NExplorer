@@ -46,6 +46,7 @@ class Download internal constructor(val id: Long, val url: String, val dir: File
         internal set
     @Volatile var file: File? = null
         internal set
+    @Volatile internal var order: Long = created
 
     @Volatile internal var parts: List<Part> = emptyList()
     internal var validator: String? = null
@@ -88,7 +89,7 @@ object Downloads {
         }
     }
 
-    fun active(): List<Download> = items.filter { it.state != DownloadState.Done }.sortedBy { it.created }
+    fun active(): List<Download> = items.filter { it.state != DownloadState.Done }.sortedBy { it.order }
     fun finished(): List<Download> = items.filter { it.state == DownloadState.Done }.sortedByDescending { it.finished }
     val busy: Int get() = items.count { it.state == DownloadState.Running || it.state == DownloadState.Queued }
 
@@ -141,6 +142,13 @@ object Downloads {
                 }
             }
         }
+        changed(save = true)
+    }
+
+    fun reorder(ids: List<Long>) {
+        val byId = items.associateBy { it.id }
+        val base = active().minOfOrNull { it.order } ?: 0L
+        ids.forEachIndexed { i, id -> byId[id]?.order = base + i }
         changed(save = true)
     }
 
@@ -370,7 +378,7 @@ object Downloads {
                 arr.put(
                     JSONObject()
                         .put("id", d.id).put("url", d.url).put("dir", d.dir.path).put("name", d.name)
-                        .put("state", d.state.name).put("total", d.total).put("created", d.created).put("finished", d.finished)
+                        .put("state", d.state.name).put("total", d.total).put("created", d.created).put("finished", d.finished).put("order", d.order)
                         .put("file", d.file?.path).put("validator", d.validator).put("error", d.error)
                         .put("parts", JSONArray().apply { d.parts.forEach { put(JSONArray().put(it.start).put(it.end).put(it.pos)) } }),
                 )
@@ -397,6 +405,7 @@ object Downloads {
                     val saved = runCatching { DownloadState.valueOf(o.getString("state")) }.getOrDefault(DownloadState.Paused)
                     state = if (saved == DownloadState.Running || saved == DownloadState.Queued) DownloadState.Paused else saved
                     total = o.optLong("total", -1L)
+                    order = o.optLong("order", created)
                     finished = o.optLong("finished", 0L)
                     file = o.optString("file").takeIf { o.has("file") && it.isNotEmpty() }?.let(::File)
                     validator = o.optString("validator").takeIf { o.has("validator") }

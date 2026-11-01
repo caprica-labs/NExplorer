@@ -10,6 +10,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -110,8 +116,16 @@ fun DownloadsFlow(volumes: List<Volume>, onOpenFile: (File) -> Unit, onClose: ()
             Page.Settings -> emptyList()
         }
     }
+    var shown by remember { mutableStateOf(list) }
+    var dragging by remember { mutableStateOf<Long?>(null) }
+    var drag by remember { mutableFloatStateOf(0f) }
+    var moved by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
     LaunchedEffect(page) { selected = emptySet() }
-    LaunchedEffect(list) { selected = selected.filter { id -> list.any { it.id == id } }.toSet() }
+    LaunchedEffect(list) {
+        selected = selected.filter { id -> list.any { it.id == id } }.toSet()
+        if (dragging == null) shown = list
+    }
 
     fun back() {
         if (selected.isNotEmpty()) selected = emptySet() else onClose()
@@ -176,12 +190,57 @@ fun DownloadsFlow(volumes: List<Volume>, onOpenFile: (File) -> Unit, onClose: ()
                         color = muted,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
                     )
-                    else -> LazyColumn(Modifier.fillMaxSize()) {
-                        items(list, key = { it.id }) { d ->
+                    else -> LazyColumn(
+                        Modifier.fillMaxSize().pointerInput(page) {
+                            if (page != Page.Active) return@pointerInput
+                            fun itemAt(y: Float) = listState.layoutInfo.visibleItemsInfo.firstOrNull { y >= it.offset && y < it.offset + it.size }
+                            fun drop() {
+                                if (moved) Downloads.reorder(shown.map { it.id })
+                                dragging = null
+                                drag = 0f
+                                moved = false
+                            }
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = { p ->
+                                    val id = itemAt(p.y)?.index?.let { shown.getOrNull(it) }?.id ?: return@detectDragGesturesAfterLongPress
+                                    dragging = id
+                                    drag = 0f
+                                    selected = selected + id
+                                },
+                                onDrag = { change, amount ->
+                                    change.consume()
+                                    val id = dragging ?: return@detectDragGesturesAfterLongPress
+                                    drag += amount.y
+                                    val from = shown.indexOfFirst { it.id == id }
+                                    val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == from } ?: return@detectDragGesturesAfterLongPress
+                                    val target = itemAt(info.offset + info.size / 2f + drag) ?: return@detectDragGesturesAfterLongPress
+                                    if (target.index != from && target.index < shown.size) {
+                                        shown = shown.toMutableList().apply { add(target.index, removeAt(from)) }
+                                        drag += info.offset - target.offset
+                                        moved = true
+                                    }
+                                },
+                                onDragEnd = ::drop,
+                                onDragCancel = ::drop,
+                            )
+                        },
+                        state = listState,
+                        userScrollEnabled = dragging == null,
+                    ) {
+                        items(shown, key = { it.id }) { d ->
                             val info = remember(d, tick, version) { d.info() }
                             val on = d.id in selected
+                            val lifted = d.id == dragging
                             Row(
                                 Modifier.fillMaxWidth()
+                                    .zIndex(if (lifted) 1f else 0f)
+                                    .graphicsLayer {
+                                        if (lifted) {
+                                            translationY = drag
+                                            shadowElevation = 12f
+                                        }
+                                    }
+                                    .background(if (lifted) MaterialTheme.colorScheme.background else Color.Transparent)
                                     .background(if (on) AccentBlue.copy(alpha = 0.12f) else Color.Transparent)
                                     .combinedClickable(
                                         onClick = {
@@ -194,7 +253,7 @@ fun DownloadsFlow(volumes: List<Volume>, onOpenFile: (File) -> Unit, onClose: ()
                                                 }
                                             }
                                         },
-                                        onLongClick = { toggle(d) },
+                                        onLongClick = if (page == Page.Finished) ({ toggle(d) }) else null,
                                     )
                                     .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
